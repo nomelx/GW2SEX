@@ -23,12 +23,20 @@ class LoginClient : public ClientConnection
 public:
     LoginClient();
     LoginClient(ClientConnection& Base);
+    ~LoginClient();
+
 public:
     void Tick(ServerSSL* SSL);
+
 private:
     XMLPacket m_Packet;
     SecureLogin m_Login;
     LoginSession m_Session;
+
+    // ClientConnection interface
+public:
+    void Close() override;
+    bool IsConnected() override;
 };
 
 #endif // LOGINCLIENT_H

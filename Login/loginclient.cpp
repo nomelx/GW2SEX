@@ -1,10 +1,15 @@
 #include "loginclient.h"
 
-LoginClient::LoginClient(ClientConnection &Base) : m_Packet(), m_Login(this), m_Session(this)
+LoginClient::LoginClient(ClientConnection &Base) : ClientConnection(), m_Packet(), m_Login(this), m_Session(this)
 {
     this->m_ClientSocket = Base.m_ClientSocket;
     this->m_ClientPriority = Base.m_ClientPriority;
     memcpy(this->m_ClientIP, Base.m_ClientIP, INET_ADDRSTRLEN);
+}
+
+LoginClient::~LoginClient()
+{
+
 }
 
 void LoginClient::Tick(ServerSSL *SSL)
@@ -34,5 +39,19 @@ void LoginClient::Tick(ServerSSL *SSL)
                 m_Login.Send();
             }
         }
-    //}
+        //}
+}
+
+void LoginClient::Close()
+{
+    //m_Session.Clear();
+    ClientConnection::Close();
+}
+
+bool LoginClient::IsConnected()
+{
+    if (!ClientConnection::IsConnected() || m_Login.GetState() == LS_FAIL) {
+        return false;
+    }
+    return true;
 }

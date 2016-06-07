@@ -11,10 +11,12 @@ bool ServerSSL::Init(const char* ServerCertFile, const char* ServerPrivateKeyFil
         return false;
     }
 
-    SSL_library_init();
     SSL_load_error_strings();
-    m_Method = TLSv1_2_server_method();
+    OpenSSL_add_ssl_algorithms();
+
+    m_Method = SSLv23_server_method();
     m_CTX = SSL_CTX_new(m_Method);
+
     SSL_CTX_set_session_cache_mode(m_CTX, SSL_SESS_CACHE_OFF);
 
     if (!m_CTX) {

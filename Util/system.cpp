@@ -23,4 +23,3 @@ void System::DebugDump(const char *Filename, const char *Data, int Length)
     fwrite(Data, sizeof(char), Length, Out);
     fclose(Out);
 }
-

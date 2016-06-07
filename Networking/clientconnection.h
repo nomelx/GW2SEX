@@ -22,12 +22,13 @@ class ClientConnection
 {
 public:
     ClientConnection();
+    virtual ~ClientConnection();
 public:
     void Send(const char* Data, unsigned int DataSize);
     int Poll(char* Buffer, unsigned int BufferSize);
 public:
-    void Close();
-    bool IsConnected();
+    virtual void Close();
+    virtual bool IsConnected();
 public:
     char m_ClientIP[INET_ADDRSTRLEN];
     int m_ClientSocket;

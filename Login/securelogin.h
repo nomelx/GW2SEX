@@ -20,7 +20,8 @@ enum LoginState {
     LS_NONE,
     LS_WAIT_HANDSHAKE,
     LS_TLS_HANDSHAKE_SENT,
-    LS_TLS_FAIL_HANDSHAKE
+    LS_TLS_FAIL_HANDSHAKE,
+    LS_FAIL
 };
 
 /*
@@ -35,10 +36,12 @@ public:
     SecureLogin(ClientConnection* Client);
 public:
     //bool Recieve(char* RecvBuffer, int Length, ServerSSL* SSL);
-    bool Recieve(ServerSSL* SSL);
-    void Send();
+    bool                Recieve(ServerSSL* SSL);
+    void                Send();
+    LoginState          GetState();
 private:
-    bool EstablishTLS();
+    bool                EstablishTLS();
+    static int          SSL_HandshakeFunction(SSL* SslSession);
 private:
     ClientConnection*   m_Client;
     LoginState          m_State;

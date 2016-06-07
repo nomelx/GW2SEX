@@ -4,6 +4,11 @@ ClientConnection::ClientConnection() : m_ClientIP(), m_ClientSocket(0), m_Client
 
 }
 
+ClientConnection::~ClientConnection()
+{
+
+}
+
 void ClientConnection::Send(const char *Data, unsigned int DataSize) {
     if (m_ClientSocket < 0) {
         return;
