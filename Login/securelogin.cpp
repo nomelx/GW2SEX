@@ -1,64 +1,96 @@
 #include "securelogin.h"
 
+#include "Util/system.h"
+
 SecureLogin::SecureLogin(ClientConnection *Client) : m_Client(Client), m_State(LS_NONE), m_SSL()
 {
 
 }
 
-//bool SecureLogin::Recieve(char *RecvBuffer, int Length, ServerSSL *SSL)
-bool SecureLogin::Recieve(ServerSSL *SSL)
+RecieveType SecureLogin::Recieve(ServerSSL *SSL)
 {
     // Client has not initiated a secure connection yet.
     if (m_State == LS_NONE) {
         m_SSL = SSL_new(SSL->GetContext());
-        //printf("SSL Created using %x - %x\n", (char)SSL->GetContext()->method->version, *(((char*)&(SSL->GetContext()->method->version))+1));
-        auto version = SSL_get_version(m_SSL);
-        printf("SSL Created using: %s\n", version);
         m_State = LS_WAIT_HANDSHAKE;
-        return true;
-    } else if (m_State == LS_WAIT_HANDSHAKE) {
-        return EstablishTLS();
+        printf("SSL Created using: %s\n", SSL_get_version(m_SSL));
+        return RT_TLS_HANDSHAKE;
+    } else if (m_State == LS_WAIT_HANDSHAKE || m_State == LS_TLS_WANT_READ_WRITE) {
+        if (EstablishTLS()) {
+            return RT_TLS_HANDSHAKE;
+        } else {
+            return RT_TLS_FAIL;
+        }
     } else if (m_State == LS_TLS_HANDSHAKE_SENT) {
-
+        if (ClientPacket()) {
+            return RT_TLS_LOGIN_PACKET;
+        } else {
+            return RT_TLS_WAIT;
+        }
     }
 
-    return false;
+    return RT_TLS_WAIT;
 }
 
 void SecureLogin::Send()
 {
+
 }
 
-LoginState SecureLogin::GetState()
+LoginState SecureLogin::GetState() const
 {
     return m_State;
 }
 
+const char *SecureLogin::GetBuffer() const
+{
+    return m_DecodeBuffer;
+}
+
 bool SecureLogin::EstablishTLS()
 {
-    SSL_set_fd(m_SSL, m_Client->m_ClientSocket);
-    SSL_set_accept_state(m_SSL);
+    int acceptRequest = -1;
 
-    SSL_set_session_id_context(m_SSL, 0, 0);
+    if (m_State == LS_WAIT_HANDSHAKE) {
+        SSL_set_fd(m_SSL, m_Client->m_ClientSocket);
+        SSL_set_accept_state(m_SSL);
+        SSL_set_session_id_context(m_SSL, 0, 0);
+        acceptRequest = SSL_accept(m_SSL);
+    }
 
-    int acceptRequest = SSL_accept(m_SSL);
+    if (m_State == LS_TLS_WANT_READ_WRITE) {
+        acceptRequest = SSL_accept(m_SSL);
+    }
 
     if ((acceptRequest) == -1) {
         int code = SSL_get_error(m_SSL, acceptRequest);
-        if (code != 2) {
+        if (!(code == SSL_ERROR_WANT_READ || code == SSL_ERROR_WANT_WRITE)) {
             printf("%s -> SSL Handshake Error - %d\n", m_Client->m_ClientIP, code);
             ERR_print_errors_fp(stderr);
             SSL_shutdown(m_SSL);
             SSL_free(m_SSL);
-            m_State = LS_FAIL;
+            m_State = LS_TLS_FAIL_HANDSHAKE;
+            return false;
+        } else {
+            m_State = LS_TLS_WANT_READ_WRITE;
         }
-        return false;
     } else {
         m_State = LS_TLS_HANDSHAKE_SENT;
         printf("%s -> Handshake Sent\n", m_Client->m_ClientIP);
     }
 
-    m_State = LS_TLS_HANDSHAKE_SENT;
-
     return true;
+}
+
+bool SecureLogin::ClientPacket() {
+
+    memset(m_DecodeBuffer, 0, 4096);
+
+    auto sslReadError = SSL_read(m_SSL, m_DecodeBuffer, 4095);
+
+    if ((sslReadError) != -1) {
+        return true;
+    }
+
+    return false;
 }

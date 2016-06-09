@@ -23,3 +23,10 @@ void System::DebugDump(const char *Filename, const char *Data, int Length)
     fwrite(Data, sizeof(char), Length, Out);
     fclose(Out);
 }
+
+void System::DebugWriteMessage(const char *Filename, const char *Data, int Length)
+{
+    FILE* Out = fopen(Filename, "wab");
+    fwrite(Data, sizeof(char), Length, Out);
+    fclose(Out);
+}

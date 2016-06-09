@@ -20,6 +20,7 @@ public:
     static void IgnoreSigPipe();
     static void CheckRoot();
     static void DebugDump(const char* Filename, const char* Data, int Length);
+    static void DebugWriteMessage(const char* Filename, const char* Data, int Length);
 };
 
 #endif // SYSTEM_H

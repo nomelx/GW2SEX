@@ -3,6 +3,7 @@
 const char* g_STS_Ping      = "/Sts/Ping STS/1.0";
 const char* g_STS_Connect   = "/Sts/Connect STS/1.0";
 const char* g_AUTH_StartTLS = "/Auth/StartTls STS/1.0";
+const char* g_AUTH_GetHost = "/Auth/GetHostname STS/1.0";
 
 LoginSession::LoginSession(ClientConnection *Client) : m_Client(Client), m_ConnectionType(0), m_Program(0),
     m_Build(0), m_Process(0), m_TSLReady(false)
@@ -20,7 +21,7 @@ bool LoginSession::Recieve(XMLPacket *Packet)
         printf("%s -> Ping!\n", m_Client->m_ClientIP);
     }
 
-    if (strncmp(Packet->m_Path, g_STS_Connect, sizeof(g_STS_Connect)) == 0) {
+    else if (strncmp(Packet->m_Path, g_STS_Connect, sizeof(g_STS_Connect)) == 0) {
         Init(Packet);
     }
 
@@ -28,8 +29,12 @@ bool LoginSession::Recieve(XMLPacket *Packet)
         StartTLS(Packet);
     }
 
+    else if (strncmp(Packet->m_Path, g_AUTH_GetHost, sizeof(g_AUTH_GetHost)) == 0) {
+        GetHostname(Packet);
+    }
+
     else {
-        printf("%s\n", Packet->m_Path);
+        printf("Unknown command: %s\n", Packet->m_Path);
     }
 
     return true;
@@ -67,7 +72,15 @@ void LoginSession::StartTLS(XMLPacket *Packet)
     } else {
 
     }
+}
 
+void LoginSession::GetHostname(XMLPacket *Packet)
+{
+    rapidxml::xml_node<>* requestNode = Packet->m_XMLDocument.first_node("Request");
 
+    auto loginName = requestNode->first_node("LoginName")->value();
+    auto provider = requestNode->first_node("Provider")->value();
+
+    printf("User %s is logging in using %s\n", loginName, provider);
 }
 

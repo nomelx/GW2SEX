@@ -12,7 +12,7 @@ bool ServerSSL::Init(const char* ServerCertFile, const char* ServerPrivateKeyFil
     }
 
     SSL_load_error_strings();
-    OpenSSL_add_ssl_algorithms();
+    SSLeay_add_ssl_algorithms();
 
     m_Method = SSLv23_server_method();
     m_CTX = SSL_CTX_new(m_Method);

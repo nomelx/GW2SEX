@@ -35,8 +35,17 @@ void LoginClient::Tick(ServerSSL *SSL)
         } else {
             // Check if there was a binary packet.
             //if (m_Login.Recieve(incommingBuffer, readLength, SSL)) {
-            if (m_Login.Recieve(SSL)) {
-                m_Login.Send();
+            if (m_Login.Recieve(SSL) == RT_TLS_LOGIN_PACKET) {
+                const char* clientLoginBuffer = m_Login.GetBuffer();
+                if (clientLoginBuffer[0] != 0) {
+                    if (m_Packet.Parse(clientLoginBuffer, 4096) && m_Packet.Validate()) {
+                        if (m_Session.Recieve(&m_Packet)) {
+                            m_Session.Send();
+                        }
+                        m_Packet.Clear();
+                    }
+                }
+                //m_Login.Send();
             }
         }
         //}
@@ -50,7 +59,7 @@ void LoginClient::Close()
 
 bool LoginClient::IsConnected()
 {
-    if (!ClientConnection::IsConnected() || m_Login.GetState() == LS_FAIL) {
+    if (!ClientConnection::IsConnected() || m_Login.GetState() == LS_TLS_FAIL_HANDSHAKE) {
         return false;
     }
     return true;

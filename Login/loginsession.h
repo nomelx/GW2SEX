@@ -20,6 +20,7 @@ public:
 private:
     void Init(XMLPacket* Packet);
     void StartTLS(XMLPacket* Packet);
+    void GetHostname(XMLPacket* Packet);
 private:
     ClientConnection* m_Client;
 private:

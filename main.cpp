@@ -4,6 +4,7 @@
  * Developed by Nomelx
  * */
 
+
 #include "framework.h"
 
 Framework g_finstance;

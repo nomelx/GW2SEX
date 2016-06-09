@@ -21,7 +21,14 @@ enum LoginState {
     LS_WAIT_HANDSHAKE,
     LS_TLS_HANDSHAKE_SENT,
     LS_TLS_FAIL_HANDSHAKE,
-    LS_FAIL
+    LS_TLS_WANT_READ_WRITE
+};
+
+enum RecieveType {
+    RT_TLS_HANDSHAKE,
+    RT_TLS_LOGIN_PACKET,
+    RT_TLS_FAIL,
+    RT_TLS_WAIT
 };
 
 /*
@@ -36,17 +43,20 @@ public:
     SecureLogin(ClientConnection* Client);
 public:
     //bool Recieve(char* RecvBuffer, int Length, ServerSSL* SSL);
-    bool                Recieve(ServerSSL* SSL);
+    RecieveType         Recieve(ServerSSL* SSL);
     void                Send();
-    LoginState          GetState();
+    LoginState          GetState() const;
+    const char*         GetBuffer() const;
 private:
     bool                EstablishTLS();
+    bool                ClientPacket();
     static int          SSL_HandshakeFunction(SSL* SslSession);
 private:
     ClientConnection*   m_Client;
     LoginState          m_State;
 private:
     char                m_ClientSeed[256];
+    char                m_DecodeBuffer[4096];
     int                 m_SeedSize;
     SSL*                m_SSL;
 };

@@ -12,8 +12,10 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
 #include <signal.h>
 #include <assert.h>
+#include <fcntl.h>
 
 #endif // NETWORKING

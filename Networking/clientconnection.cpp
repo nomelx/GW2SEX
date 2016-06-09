@@ -17,7 +17,10 @@ void ClientConnection::Send(const char *Data, unsigned int DataSize) {
     unsigned int totalSent = 0;
     unsigned int toSend = DataSize;
 
+    fcntl(m_ClientSocket, F_SETFL, O_NONBLOCK);
+
     while (totalSent != DataSize) {
+        //setsockopt(m_ClientSocket, SOL_SOCKET, SO_SNDBUF,  &DataSize, sizeof(unsigned int));
         int sent = send(m_ClientSocket, Data, DataSize, 0);
         totalSent += sent;
         toSend -= toSend;
@@ -27,6 +30,7 @@ void ClientConnection::Send(const char *Data, unsigned int DataSize) {
             break;
         }
     }
+
 }
 
 int ClientConnection::Poll(char *Buffer, unsigned int BufferSize) {

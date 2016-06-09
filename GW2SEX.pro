@@ -22,7 +22,9 @@ SOURCES += main.cpp \
     3rdParty/sha256.cpp \
     Login/serverssl.cpp
 #-lmongoclient -lboost_system
-LIBS += -lconfig++ -pthread -lcrypto -lssl
+LIBS += -lconfig++ -pthread
+LIBS += -L"/usr/local/lib64/" -lcrypto
+LIBS += -L"/usr/local/lib64/" -lssl
 QMAKE_CXXFLAGS +=
 
 include(deployment.pri)
