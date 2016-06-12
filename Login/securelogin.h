@@ -44,7 +44,7 @@ public:
 public:
     //bool Recieve(char* RecvBuffer, int Length, ServerSSL* SSL);
     RecieveType         Recieve(ServerSSL* SSL);
-    void                Send();
+    void                Send(const char *Data, size_t DataSize);
     LoginState          GetState() const;
     const char*         GetBuffer() const;
 private:

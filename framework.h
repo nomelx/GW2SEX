@@ -27,6 +27,7 @@ struct FrameworkOptions {
     char        m_ServerName[512];
     uint16_t    m_LoginServerPort;
     int         m_ServerTickRate;
+    bool        m_MITMMode;
 };
 
 /*

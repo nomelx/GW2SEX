@@ -20,7 +20,8 @@ SOURCES += main.cpp \
     Util/text.cpp \
     Login/loginsession.cpp \
     3rdParty/sha256.cpp \
-    Login/serverssl.cpp
+    Login/serverssl.cpp \
+    Login/mitmsocket.cpp
 #-lmongoclient -lboost_system
 LIBS += -lconfig++ -pthread
 LIBS += -L"/usr/local/lib64/" -lcrypto
@@ -51,4 +52,5 @@ HEADERS += \
     Util/text.h \
     Login/loginsession.h \
     3rdParty/sha256.h \
-    Login/serverssl.h
+    Login/serverssl.h \
+    Login/mitmsocket.h

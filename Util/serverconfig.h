@@ -24,6 +24,7 @@ public:
 public:
     const char* GetSettingString(const char* Key);
     int GetSettingInteger(const char* Key);
+    bool GetSettingBool(const char *Key);
 
 private:
     libconfig::Config m_ConfigInstance;

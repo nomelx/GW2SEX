@@ -24,8 +24,10 @@ int Framework::Run(int argc, char **argv)
     printf("Client update rate set at %d ticks per second\n", m_Options.m_ServerTickRate);
 
     // This will spawn off the login / server socket thread
-    if (!m_LoginServer.Startup(m_Options.m_LoginServerPort, GetSettingString("networking.login_server.certFile"),
-                               GetSettingString("networking.login_server.keyFile"))) {
+    if (!m_LoginServer.Startup(m_Options.m_LoginServerPort,
+                               GetSettingString("networking.login_server.certFile"),
+                               GetSettingString("networking.login_server.keyFile"),
+                               m_Options.m_MITMMode)) {
         m_LoginServer.Shutdown();
         printf("!) Unable to create login server (listner).\n");
         return 1;
@@ -68,6 +70,7 @@ bool Framework::Configure(int argc, char **argv)
     sprintf(m_Options.m_ServerName, "%s", GetSettingString("networking.server.name"));
     m_Options.m_LoginServerPort = GetSettingInteger("networking.login_server.port");
     m_Options.m_ServerTickRate = GetSettingInteger("networking.login_server.tickRate");
+    m_Options.m_MITMMode = GetSettingBool("networking.server.mitmMode");
 
     return true;
 }

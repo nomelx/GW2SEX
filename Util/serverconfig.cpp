@@ -54,3 +54,15 @@ int ServerConfig::GetSettingInteger(const char *Key)
     }
     return 0;
 }
+
+bool ServerConfig::GetSettingBool(const char *Key)
+{
+    try {
+        bool booleanBuffer = false;
+        booleanBuffer = m_ConfigInstance.lookup(Key);
+        return booleanBuffer;
+    } catch(const libconfig::SettingNotFoundException &nfex) {
+        printf("<ServerConfig::GetSettingString> Lookup of %s failed.\n", Key);
+    }
+    return false;
+}

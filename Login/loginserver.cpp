@@ -1,15 +1,16 @@
 #include "loginserver.h"
 
-LoginServer::LoginServer() : m_Running(false), m_ServerPort(0), m_Clients(), m_SSL()
+LoginServer::LoginServer() : m_Running(false), m_MitmMode(false), m_ServerPort(0), m_Clients(), m_SSL()
 {
 
 }
 
-bool LoginServer::Startup(uint16_t ServerPort, const char* Certificate, const char* PrivateKey)
+bool LoginServer::Startup(uint16_t ServerPort, const char* Certificate, const char* PrivateKey, bool MitmMode)
 {
     m_Running = true;
     m_loginThread = std::thread(Run, this);
     m_ServerPort = ServerPort;
+    m_MitmMode = MitmMode;
 
     if (!m_SSL.Init(Certificate, PrivateKey)) {
         printf("Unable to init SSL, most likely an issue with reading the Certificate or Private Key\n.");
@@ -36,7 +37,7 @@ void LoginServer::Update()
 
         // Only interact with the client if its connected duh
         if (client->IsConnected()) {
-            client->Tick(&this->m_SSL);
+            client->Tick(&this->m_SSL, m_MitmMode);
         } else {
             m_Clients.erase(m_Clients.begin()+i);
             printf("Client Disconnected: %s\n", client->m_ClientIP);

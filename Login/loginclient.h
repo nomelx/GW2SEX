@@ -15,6 +15,7 @@
 #include "../GW2/gw2common.h"
 #include "../Util/system.h"
 
+#include "mitmsocket.h"
 #include "securelogin.h"
 #include "loginsession.h"
 
@@ -26,7 +27,7 @@ public:
     ~LoginClient();
 
 public:
-    void Tick(ServerSSL* SSL);
+    void Tick(ServerSSL* SSL, bool MitmMode);
 
 private:
     XMLPacket m_Packet;
@@ -37,6 +38,9 @@ private:
 public:
     void Close() override;
     bool IsConnected() override;
+
+private:
+    MitmSocket m_MitmSocket;
 };
 
 #endif // LOGINCLIENT_H

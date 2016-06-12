@@ -26,7 +26,7 @@ void System::DebugDump(const char *Filename, const char *Data, int Length)
 
 void System::DebugWriteMessage(const char *Filename, const char *Data, int Length)
 {
-    FILE* Out = fopen(Filename, "wab");
+    FILE* Out = fopen(Filename, "ab");
     fwrite(Data, sizeof(char), Length, Out);
     fclose(Out);
 }

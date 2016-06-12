@@ -22,7 +22,7 @@ class LoginServer
 public:
     LoginServer();
 public:
-    bool                        Startup(uint16_t ServerPort, const char *Certificate, const char *PrivateKey);
+    bool                        Startup(uint16_t ServerPort, const char *Certificate, const char *PrivateKey, bool MitmMode);
     void                        Update();
     void                        Shutdown();
 private:
@@ -30,6 +30,7 @@ private:
     static void                 Run(LoginServer* Instance);
 private:
     bool                        m_Running;
+    bool                        m_MitmMode;
     uint16_t                    m_ServerPort;
     std::thread                 m_loginThread;
 private:

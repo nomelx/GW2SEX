@@ -7,6 +7,7 @@
  * Developed by Nomelx
  * */
 
+#include "securelogin.h"
 #include "../Networking/xmlpacket.h"
 #include "../Networking/clientconnection.h"
 
@@ -16,7 +17,7 @@ public:
     LoginSession(ClientConnection* Client);
 public:
     bool Recieve(XMLPacket* Packet);
-    void Send();
+    void Send(SecureLogin* tlsClient);
 private:
     void Init(XMLPacket* Packet);
     void StartTLS(XMLPacket* Packet);
@@ -28,6 +29,9 @@ private:
     int m_Program;
     int m_Build;
     int m_Process;
+    char m_TLSSendBuffer[4096];
+    int m_TLSSendBufferLength;
+    bool m_TLSSendNeeded;
 public:
     bool m_TSLReady;
 };

@@ -32,9 +32,16 @@ RecieveType SecureLogin::Recieve(ServerSSL *SSL)
     return RT_TLS_WAIT;
 }
 
-void SecureLogin::Send()
+void SecureLogin::Send(const char* Data, size_t DataSize)
 {
-
+    auto sendError = SSL_write(m_SSL, Data, DataSize);
+    if (sendError == -1) {
+        printf("There was an issue sending TLS data to the client, requested send size was %d\n", DataSize);
+    } else {
+        System::DebugWriteMessage("SSL_Trace.dat", "--Send--\n\n", strlen("--Send--\n\n"));
+        System::DebugWriteMessage("SSL_Trace.dat", Data, DataSize);
+        System::DebugWriteMessage("SSL_Trace.dat", "\n\n--Send END--\n\n", strlen("\n\n--Send END--\n\n"));
+    }
 }
 
 LoginState SecureLogin::GetState() const
@@ -88,9 +95,11 @@ bool SecureLogin::ClientPacket() {
 
     auto sslReadError = SSL_read(m_SSL, m_DecodeBuffer, 4095);
 
-    if ((sslReadError) != -1) {
+    if (sslReadError != -1) {
         return true;
     }
+
+    auto sslErrorCode = SSL_get_error(m_SSL, sslReadError);
 
     return false;
 }

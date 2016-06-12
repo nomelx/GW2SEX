@@ -6,7 +6,7 @@ const char* g_AUTH_StartTLS = "/Auth/StartTls STS/1.0";
 const char* g_AUTH_GetHost = "/Auth/GetHostname STS/1.0";
 
 LoginSession::LoginSession(ClientConnection *Client) : m_Client(Client), m_ConnectionType(0), m_Program(0),
-    m_Build(0), m_Process(0), m_TSLReady(false)
+    m_Build(0), m_Process(0), m_TLSSendBuffer(), m_TLSSendBufferLength(0), m_TLSSendNeeded(false), m_TSLReady(false)
 {
 
 }
@@ -40,9 +40,13 @@ bool LoginSession::Recieve(XMLPacket *Packet)
     return true;
 }
 
-void LoginSession::Send()
+void LoginSession::Send(SecureLogin *tlsClient)
 {
-
+    if (m_TLSSendNeeded) {
+        tlsClient->Send(m_TLSSendBuffer, m_TLSSendBufferLength);
+        m_TLSSendNeeded = false;
+        memset(m_TLSSendBuffer, 0, 4096);
+    }
 }
 
 void LoginSession::Init(XMLPacket *Packet)
@@ -82,5 +86,12 @@ void LoginSession::GetHostname(XMLPacket *Packet)
     auto provider = requestNode->first_node("Provider")->value();
 
     printf("User %s is logging in using %s\n", loginName, provider);
+
+    memset(m_TLSSendBuffer, 0, 4096);
+    sprintf(m_TLSSendBuffer, "STS/1.0 200 OK\r\nl:70\r\ns:2R\r\n\r\n<Reply>\n<Hostname>cligate-fra.101.ncplatform.net.</Hostname>\n</Reply>\n",
+            strlen("STS/1.0 200 OK\r\nl:70\r\ns:2R\r\n\r\n<Reply>\n<Hostname>cligate-fra.101.ncplatform.net.</Hostname>\n</Reply>\n"));
+    m_TLSSendBufferLength = strlen(m_TLSSendBuffer);
+    m_TLSSendNeeded = true;
+
 }
 
