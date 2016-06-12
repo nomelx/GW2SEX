@@ -27,4 +27,3 @@ const char *text::MoveToNextLine(const char *Line, int Max)
     }
     return 0;
 }
-

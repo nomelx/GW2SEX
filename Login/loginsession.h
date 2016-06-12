@@ -11,6 +11,9 @@
 #include "../Networking/xmlpacket.h"
 #include "../Networking/clientconnection.h"
 
+#include <openssl/bio.h>
+#include <openssl/evp.h>
+
 class LoginSession
 {
 public:
@@ -22,6 +25,7 @@ private:
     void Init(XMLPacket* Packet);
     void StartTLS(XMLPacket* Packet);
     void GetHostname(XMLPacket* Packet);
+    void StartSsoLogin(XMLPacket* Packet);
 private:
     ClientConnection* m_Client;
 private:

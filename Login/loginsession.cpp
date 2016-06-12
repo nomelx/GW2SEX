@@ -1,9 +1,10 @@
 #include "loginsession.h"
 
-const char* g_STS_Ping      = "/Sts/Ping STS/1.0";
-const char* g_STS_Connect   = "/Sts/Connect STS/1.0";
-const char* g_AUTH_StartTLS = "/Auth/StartTls STS/1.0";
-const char* g_AUTH_GetHost = "/Auth/GetHostname STS/1.0";
+const char* g_STS_Ping              = "/Sts/Ping STS/1.0";
+const char* g_STS_Connect           = "/Sts/Connect STS/1.0";
+const char* g_AUTH_StartTLS         = "/Auth/StartTls STS/1.0";
+const char* g_AUTH_GetHost          = "/Auth/GetHostname STS/1.0";
+const char* g_AUTH_StartSsoLogin    = "/Auth/StartSsoLogin STS/1.0";
 
 LoginSession::LoginSession(ClientConnection *Client) : m_Client(Client), m_ConnectionType(0), m_Program(0),
     m_Build(0), m_Process(0), m_TLSSendBuffer(), m_TLSSendBufferLength(0), m_TLSSendNeeded(false), m_TSLReady(false)
@@ -17,20 +18,24 @@ bool LoginSession::Recieve(XMLPacket *Packet)
         return false;
     }
 
-    if (strncmp(Packet->m_Path, g_STS_Ping, sizeof(g_STS_Ping)) == 0) {
+    if (strncmp(Packet->m_Path, g_STS_Ping, sizeof(Packet->m_Path)) == 0) {
         printf("%s -> Ping!\n", m_Client->m_ClientIP);
     }
 
-    else if (strncmp(Packet->m_Path, g_STS_Connect, sizeof(g_STS_Connect)) == 0) {
+    else if (strncmp(Packet->m_Path, g_STS_Connect, sizeof(Packet->m_Path)) == 0) {
         Init(Packet);
     }
 
-    else if (strncmp(Packet->m_Path, g_AUTH_StartTLS, sizeof(g_AUTH_StartTLS)) == 0) {
+    else if (strncmp(Packet->m_Path, g_AUTH_StartTLS, sizeof(Packet->m_Path)) == 0) {
         StartTLS(Packet);
     }
 
-    else if (strncmp(Packet->m_Path, g_AUTH_GetHost, sizeof(g_AUTH_GetHost)) == 0) {
+    else if (strncmp(Packet->m_Path, g_AUTH_GetHost, sizeof(Packet->m_Path)) == 0) {
         GetHostname(Packet);
+    }
+
+    else if (strncmp(Packet->m_Path, g_AUTH_StartSsoLogin, sizeof(Packet->m_Path)) == 0) {
+        StartSsoLogin(Packet);
     }
 
     else {
@@ -93,5 +98,27 @@ void LoginSession::GetHostname(XMLPacket *Packet)
     m_TLSSendBufferLength = strlen(m_TLSSendBuffer);
     m_TLSSendNeeded = true;
 
+}
+
+void LoginSession::StartSsoLogin(XMLPacket *Packet)
+{
+    rapidxml::xml_node<>* requestNode = Packet->m_XMLDocument.first_node("Request");
+
+    char password[1024];
+    memset(password, 0, 1024);
+    int passwordLength = -1;
+
+    auto username = requestNode->first_node("LoginName")->value();
+    auto passwordBase64 = requestNode->first_node("Password")->value();
+
+    auto    bio = BIO_new_mem_buf(passwordBase64, -1);
+    auto    b64 = BIO_new(BIO_f_base64());
+            bio = BIO_push(b64, bio);
+
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); //Do not use newlines to flush buffer
+    passwordLength = BIO_read(bio, password, strlen(passwordBase64));
+    BIO_free_all(bio);
+
+    printf("Login >> %s with %s\n", username, password);
 }
 
