@@ -8,6 +8,7 @@
  * */
 
 #include "securelogin.h"
+#include "../GW2/gw2packet.h"
 #include "../Networking/xmlpacket.h"
 #include "../Networking/clientconnection.h"
 
@@ -26,6 +27,8 @@ private:
     void StartTLS(XMLPacket* Packet);
     void GetHostname(XMLPacket* Packet);
     void StartSsoLogin(XMLPacket* Packet);
+    void ListGameAccounts(XMLPacket* Packet);
+    void Logout(XMLPacket *Packet);
 private:
     ClientConnection* m_Client;
 private:

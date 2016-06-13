@@ -146,6 +146,7 @@ void LoginSession::ListGameAccounts(XMLPacket *Packet)
 
     GW2Packet packet = GW2Packet("/Presence/UserInfo", PT_MESSAGE);
     packet.AddElement("Status", "online");
+    packet.AddElement("Status", "online");
 }
 
 void LoginSession::Logout(XMLPacket *Packet)

@@ -25,8 +25,7 @@
  * */
 struct FrameworkOptions {
     char        m_ServerName[512];
-    uint16_t    m_LoginServerPort;
-    int         m_ServerTickRate;
+    char        m_ServerMode[512];
     bool        m_MITMMode;
 };
 
@@ -39,6 +38,7 @@ public:
     Framework();
 public:
     int                 Run(int argc, char** argv);
+    int                 RunGateway();
 public:
     bool                Configure(int argc, char** argv);
 public:

@@ -19,14 +19,27 @@ int Framework::Run(int argc, char **argv)
         return 1;
     }
 
+
+    if (strcmp(m_Options.m_ServerMode, "gateway") == 0) {
+        return RunGateway();
+    }
+
+    return 0;
+}
+
+int Framework::RunGateway()
+{
+    int gatewayPort = GetSettingInteger("networking.login_server.port");
+    const char* gatewayCertificate = GetSettingString("networking.login_server.certFile");
+    const char* gatewayPrivateKey = GetSettingString("networking.login_server.keyFile");
+
     printf("Starting %s\n", m_Options.m_ServerName);
-    printf("Starting login server on port %d\n", m_Options.m_LoginServerPort);
-    printf("Client update rate set at %d ticks per second\n", m_Options.m_ServerTickRate);
+    printf("Starting login gateway server on port %d\n", gatewayPort);
 
     // This will spawn off the login / server socket thread
-    if (!m_LoginServer.Startup(m_Options.m_LoginServerPort,
-                               GetSettingString("networking.login_server.certFile"),
-                               GetSettingString("networking.login_server.keyFile"),
+    if (!m_LoginServer.Startup(gatewayPort,
+                               gatewayCertificate,
+                               gatewayPrivateKey,
                                m_Options.m_MITMMode)) {
         m_LoginServer.Shutdown();
         printf("!) Unable to create login server (listner).\n");
@@ -68,8 +81,8 @@ bool Framework::Configure(int argc, char **argv)
 
     // Load any missions critical options here.
     sprintf(m_Options.m_ServerName, "%s", GetSettingString("networking.server.name"));
-    m_Options.m_LoginServerPort = GetSettingInteger("networking.login_server.port");
-    m_Options.m_ServerTickRate = GetSettingInteger("networking.login_server.tickRate");
+    sprintf(m_Options.m_ServerMode, "%s", GetSettingString("networking.server.mode"));
+
     m_Options.m_MITMMode = GetSettingBool("networking.server.mitmMode");
 
     return true;
