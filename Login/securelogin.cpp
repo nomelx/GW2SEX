@@ -96,6 +96,11 @@ bool SecureLogin::ClientPacket() {
     auto sslReadError = SSL_read(m_SSL, m_DecodeBuffer, 4095);
 
     if (sslReadError != -1) {
+        if (sslReadError > 1) {
+            System::DebugWriteMessage("SSL_Trace.dat", "--Recv--\n\n", strlen("--Recv--\n\n"));
+            System::DebugWriteMessage("SSL_Trace.dat", m_DecodeBuffer, sslReadError);
+            System::DebugWriteMessage("SSL_Trace.dat", "\n\n--Recv END--\n\n", strlen("\n\n--Recv END--\n\n"));
+        }
         return true;
     }
 

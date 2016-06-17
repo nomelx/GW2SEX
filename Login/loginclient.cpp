@@ -68,10 +68,6 @@ void LoginClient::Tick(ServerSSL *SSL, bool MitmMode)
             if (clientLoginBuffer[0] != 0) {
                 if (m_Packet.Parse(clientLoginBuffer, 4096) && m_Packet.Validate()) {
 
-                    System::DebugWriteMessage("SSL_Trace.dat", "--Recv--\n\n", strlen("--Recv--\n\n"));
-                    System::DebugWriteMessage("SSL_Trace.dat", clientLoginBuffer, strlen(clientLoginBuffer));
-                    System::DebugWriteMessage("SSL_Trace.dat", "\n\n--Recv END--\n\n", strlen("\n\n--Recv END--\n\n"));
-
                     if (m_Session.Recieve(&m_Packet)) {
                         m_Session.Send(&m_Login);
                     }

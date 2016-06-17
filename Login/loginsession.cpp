@@ -118,9 +118,18 @@ void LoginSession::StartSsoLogin(XMLPacket *Packet)
     memset(password, 0, 1024);
     int passwordLength = -1;
 
-    auto username = requestNode->first_node("LoginName")->value();
-    auto passwordBase64 = requestNode->first_node("Password")->value();
+    char* username = nullptr;
+    char* passwordBase64 = nullptr;
 
+    try {
+        username = requestNode->first_node("LoginName")->value();
+        passwordBase64 = requestNode->first_node("Password")->value();
+    }
+    catch(std::exception ex)
+    {
+        printf("Password tokens not supported.\n");
+        return;
+    }
     auto    bio = BIO_new_mem_buf(passwordBase64, -1);
     auto    b64 = BIO_new(BIO_f_base64());
             bio = BIO_push(b64, bio);
@@ -144,8 +153,19 @@ void LoginSession::ListGameAccounts(XMLPacket *Packet)
     rapidxml::xml_node<>* requestNode = Packet->m_XMLDocument.first_node("Request");
     auto gameCode = requestNode->first_node("GameCode")->value();
 
-    GW2Packet packet = GW2Packet("/Presence/UserInfo", PT_MESSAGE);
+    /*GW2Packet packet = GW2Packet("/Presence/UserInfo", PT_MESSAGE);
     packet.AddElement("Status", "online");
+    packet.AddElement("Status", "online");*/
+
+    printf("Looking up game accounts...\n");
+
+    const char* replyMessageTemp = "P /Presence/UserInfo STS/1.0\r\nl:317\r\n\r\n<Message>\n<Status>online</Status>\n<Aliases/>\n<OnlineTimes>\n<Online scope=\"gw2\" age=\"1781\"/>\n</OnlineTimes>\n<AppData/>\n<Channels/>\n<Groups/>\n<Contacts/>\n<UserId>0687C32C-0331-E611-80C3-ECB1D78A5C75</UserId>\n<UserCenter>5</UserCenter>\n<UserName>:nomelx.4678</UserName>\n<ChangeId>5</ChangeId>\n<NewBeginning/>\n</Message>\n";
+
+    memset(m_TLSSendBuffer, 0, 4096);
+    sprintf(m_TLSSendBuffer, replyMessageTemp,
+            strlen(replyMessageTemp));
+    m_TLSSendBufferLength = strlen(m_TLSSendBuffer);
+    m_TLSSendNeeded = true;
 }
 
 void LoginSession::Logout(XMLPacket *Packet)
