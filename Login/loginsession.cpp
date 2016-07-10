@@ -81,33 +81,37 @@ void LoginSession::StartTLS(XMLPacket *Packet)
 {
     char response[512];
     printf("%s -> TLS Session Requested\n", m_Client->m_ClientIP);
-    int sequence = Packet->m_Meta[0] - '0';
+    int sequence = Packet->m_Meta[2] - '0';
 
-    // If the client is not blocked
-    if (true) {
-        sprintf(response, "STS/1.0 400 Success\r\ns:%dR\r\nl:%d\r\n\r\n<Error server=\"1001\" module=\"4\" line=\"262\"/>\n", sequence, 45);
-        m_Client->Send(response, strlen(response));
-        m_TSLReady = true;
-    } else {
-
-    }
+    // Do not bother with a formal reply, there does not seem to be any variation in this call
+    sprintf(response, "STS/1.0 400 Success\r\ns:%dR\r\nl:%d\r\n\r\n<Error server=\"1001\" module=\"4\" line=\"262\"/>\n", sequence, 45);
+    m_Client->Send(response, strlen(response));
+    m_TSLReady = true;
 }
 
 void LoginSession::GetHostname(XMLPacket *Packet)
 {
     rapidxml::xml_node<>* requestNode = Packet->m_XMLDocument.first_node("Request");
 
+    // TODO: hook the below code up to the database, we may
+    // want to send them to a diffrent server if say portal = bot?
     auto loginName = requestNode->first_node("LoginName")->value();
     auto provider = requestNode->first_node("Provider")->value();
 
+    // Debug message.
     printf("User %s is logging in using %s\n", loginName, provider);
+    int sequence = Packet->m_Meta[2] - '0';
 
+    // Form a packet, the only element is the detination host name
+    // GW2 will then try to connect to the specified server.
+    GW2Packet replyPacket("", sequence, PT_REPLY);
+    replyPacket.AddElement("Hostname", "cligate-fra.101.ncplatform.net.");
+
+    // Signal that there is TLS data to be sent next time round.
     memset(m_TLSSendBuffer, 0, 4096);
-    sprintf(m_TLSSendBuffer, "STS/1.0 200 OK\r\nl:70\r\ns:2R\r\n\r\n<Reply>\n<Hostname>cligate-fra.101.ncplatform.net.</Hostname>\n</Reply>\n",
-            strlen("STS/1.0 200 OK\r\nl:70\r\ns:2R\r\n\r\n<Reply>\n<Hostname>cligate-fra.101.ncplatform.net.</Hostname>\n</Reply>\n"));
+    sprintf(m_TLSSendBuffer, replyPacket.Payload());
     m_TLSSendBufferLength = strlen(m_TLSSendBuffer);
     m_TLSSendNeeded = true;
-
 }
 
 void LoginSession::StartSsoLogin(XMLPacket *Packet)
@@ -123,29 +127,48 @@ void LoginSession::StartSsoLogin(XMLPacket *Packet)
 
     try {
         username = requestNode->first_node("LoginName")->value();
-        passwordBase64 = requestNode->first_node("Password")->value();
+        if (requestNode->first_node("Password") != nullptr) {
+            passwordBase64 = requestNode->first_node("Password")->value();
+            auto    bio = BIO_new_mem_buf(passwordBase64, -1);
+            auto    b64 = BIO_new(BIO_f_base64());
+                    bio = BIO_push(b64, bio);
+
+            BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+            passwordLength = BIO_read(bio, password, strlen(passwordBase64));
+            BIO_free_all(bio);
+        }
     }
     catch(std::exception ex)
     {
         printf("Password tokens not supported.\n");
         return;
     }
-    auto    bio = BIO_new_mem_buf(passwordBase64, -1);
-    auto    b64 = BIO_new(BIO_f_base64());
-            bio = BIO_push(b64, bio);
 
-    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
-    passwordLength = BIO_read(bio, password, strlen(passwordBase64));
-    BIO_free_all(bio);
+    // TODO: add support for resume tokens
+    if (passwordBase64 == nullptr) {
+        printf("Resume tokens not supported yet\n");
+        m_TSLReady = false;
+        return;
+    }
 
     printf("Login >> %s with %s\n", username, password);
+    int sequence = Packet->m_Meta[2] - '0';
+
+    const char* temporary_guid = "0687C32C-0331-E611-80C3-ECB1D78A5C75";
+    const char* temporary_resumeToken = "22236HTR-CCCC-CCCC-CCCC-2310CCCCC93A";
+    const char* temporary_username = "nomelx.devel";
 
     memset(m_TLSSendBuffer, 0, 4096);
-    sprintf(m_TLSSendBuffer, "STS/1.0 200 OK\r\ns:2R\r\nl:%d\r\n\r\n<Reply>\n<UserId>0687C32C-0331-E611-80C3-ECB1D78A5C75</UserId>\n<UserCenter>5</UserCenter>\n<UserName>:nomelx.4678</UserName>\n<Parts/>\n<ResumeToken>54582F3B-CAE5-467A-A84B-23109DDA393A</ResumeToken>\n<EmailVerified>1</EmailVerified>\n</Reply>\n",
-            strlen("<Reply>\n<UserId>0687C32C-0331-E611-80C3-ECB1D78A5C75</UserId>\n<UserCenter>5</UserCenter>\n<UserName>:nomelx.4678</UserName>\n<Parts/>\n<ResumeToken>54582F3B-CAE5-467A-A84B-23109DDA393A</ResumeToken>\n<EmailVerified>1</EmailVerified>\n</Reply>\n"));
+    GW2Packet replyPacket("", sequence, PT_REPLY);
+    replyPacket.AddElement("UserId", temporary_guid);
+    replyPacket.AddElement("UserCenter", "5");
+    replyPacket.AddElement("UserName", temporary_username);
+    replyPacket.AddElement("Parts", "");
+    replyPacket.AddElement("ResumeToken", temporary_resumeToken);
+    replyPacket.AddElement("EmailVerified", "1");
+    sprintf(m_TLSSendBuffer, replyPacket.Payload());
     m_TLSSendBufferLength = strlen(m_TLSSendBuffer);
     m_TLSSendNeeded = true;
-
 }
 
 void LoginSession::ListGameAccounts(XMLPacket *Packet)
@@ -158,12 +181,45 @@ void LoginSession::ListGameAccounts(XMLPacket *Packet)
     packet.AddElement("Status", "online");*/
 
     printf("Looking up game accounts...\n");
+    int sequence = Packet->m_Meta[2] - '0';
 
-    const char* replyMessageTemp = "P /Presence/UserInfo STS/1.0\r\nl:317\r\n\r\n<Message>\n<Status>online</Status>\n<Aliases/>\n<OnlineTimes>\n<Online scope=\"gw2\" age=\"1781\"/>\n</OnlineTimes>\n<AppData/>\n<Channels/>\n<Groups/>\n<Contacts/>\n<UserId>0687C32C-0331-E611-80C3-ECB1D78A5C75</UserId>\n<UserCenter>5</UserCenter>\n<UserName>:nomelx.4678</UserName>\n<ChangeId>5</ChangeId>\n<NewBeginning/>\n</Message>\n";
+    const char* temporary_guid = "0687C32C-0331-E611-80C3-ECB1D78A5C75";
+    const char* temporary_username = "nomelx.devel";
 
     memset(m_TLSSendBuffer, 0, 4096);
-    sprintf(m_TLSSendBuffer, replyMessageTemp,
-            strlen(replyMessageTemp));
+    GW2Packet messagePacket("/Presence/UserInfo", sequence, PT_MESSAGE);
+    messagePacket.AddElement("Status", "online");
+    messagePacket.AddElement("Aliases", "");
+    messagePacket.AddElement("OnlineTimes", "");
+    messagePacket.AddElement("AppData", "");
+    messagePacket.AddElement("Channels", "");
+    messagePacket.AddElement("Groups", "");
+    messagePacket.AddElement("Contacts", "");
+    messagePacket.AddElement("UserId", temporary_guid);
+    messagePacket.AddElement("UserCenter", "5");
+    messagePacket.AddElement("UserName", temporary_username);
+    messagePacket.AddElement("ChangeId", "20");
+    messagePacket.AddElement("NewBeginning", "");
+
+    std::string compiledReply = "";
+    std::string temporaryGameList[] = {
+        "STS/1.0 200 OK\r\n",
+        "s:"+std::to_string(sequence)+"R\r\n",
+        "l:136\r\n",
+        "\r\n",
+        "<Reply type=\"array\">\n",
+        "<Row>\n"
+        "<GameCode>gw2</GameCode>\n"
+        "<Alias>Guild Wars 2</Alias>\n"
+        "<Created>2016-06-13T01:07:20Z</Created>\n"
+        "</Row>\n"
+        "</Reply>\n"
+    };
+    for (auto line : temporaryGameList) {
+        compiledReply += line;
+    }
+
+    sprintf(m_TLSSendBuffer, "%s%s", messagePacket.Payload(), compiledReply.c_str());
     m_TLSSendBufferLength = strlen(m_TLSSendBuffer);
     m_TLSSendNeeded = true;
 }

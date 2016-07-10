@@ -1,6 +1,6 @@
 #include "loginserver.h"
 
-LoginServer::LoginServer() : m_Running(false), m_MitmMode(false), m_ServerPort(0), m_Clients(), m_SSL()
+LoginServer::LoginServer() : m_Running(false), m_MitmMode(false), m_ServerPort(0), m_loginThread(), m_ClientsLock(), m_Clients(), m_SSL()
 {
 
 }

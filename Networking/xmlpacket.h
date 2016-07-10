@@ -19,18 +19,18 @@ class XMLPacket
 public:
     XMLPacket();
 public:
-    bool Parse(const char* Data, unsigned int Length);
-    bool Validate();
-    void Clear();
+    bool    Parse(const char* Data, unsigned int Length);
+    bool    Validate();
+    void    Clear();
 public:
-    char m_Path[256];
-    char m_Data[2056];
-    char m_Meta[256];
-    int m_Length;
+    char    m_Path[256];
+    char    m_Data[2056];
+    char    m_Meta[256];
+    int     m_Length;
     rapidxml::xml_document<> m_XMLDocument;
 private:
-    bool m_Ready;
-    int m_DataWritten;
+    bool    m_Ready;
+    int     m_DataWritten;
 };
 
 #endif // XMLPACKET_H

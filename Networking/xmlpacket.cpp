@@ -15,6 +15,7 @@ bool XMLPacket::Parse(const char *Data, unsigned int Length)
 
     // Copy over the packet to do our parsing
     char* tmpReadBuffer = new char[Length];
+    memset(tmpReadBuffer, 0, Length);
     memcpy(tmpReadBuffer, Data, Length);
 
     // Make sure we are not fucking around with newlines
@@ -31,7 +32,7 @@ bool XMLPacket::Parse(const char *Data, unsigned int Length)
         } else if (line.m_Start[0] == 'l') {
             m_Length = atoi(line.m_Start+2);
         } else if (line.m_Start[0] == 's') {
-            strncpy(m_Meta, line.m_Start+2, line.m_Length-2);
+            strncpy(m_Meta, line.m_Start, line.m_Length);
         } else {
             strncpy(m_Data+m_DataWritten, line.m_Start, line.m_Length);
             m_DataWritten += line.m_Length;
@@ -77,4 +78,3 @@ void XMLPacket::Clear()
     m_Ready = false;
     m_DataWritten = 0;
 }
-

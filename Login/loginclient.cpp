@@ -37,7 +37,7 @@ void LoginClient::Tick(ServerSSL *SSL, bool MitmMode)
                 m_MitmSocket.OnServerRecieve(&m_Packet, incommingBuffer, readLength);
             }
 
-            // Read int and spit out.
+            // Read in and spit out.
             if (m_Session.Recieve(&m_Packet)) {
             }
 

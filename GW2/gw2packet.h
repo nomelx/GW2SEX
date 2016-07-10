@@ -19,7 +19,7 @@ enum GW2PacketType {
 class GW2Packet
 {
 public:
-    GW2Packet(const char* path, GW2PacketType type);
+    GW2Packet(const char* path, int sequence, GW2PacketType type);
 public:
     void                                AddElement(const char* key, const char* value);
     void                                AddAttribute(const char* key, const char* attribute);
@@ -27,6 +27,7 @@ public:
 private:
     char                                m_PacketHeader[2048];
     char                                m_PacketData[4096];
+    int                                 m_Sequence;
     GW2PacketType                       m_Type;
     rapidxml::xml_document<>            m_Document;
     rapidxml::xml_node<>*               m_RequestNode;
