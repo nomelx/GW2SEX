@@ -7,9 +7,10 @@ const char* g_AUTH_GetHost          = "/Auth/GetHostname STS/1.0";
 const char* g_AUTH_StartSsoLogin    = "/Auth/StartSsoLogin STS/1.0";
 const char* g_AUTH_ListGameAcc      = "/Account/ListMyGameAccounts STS/1.0";
 const char* g_AUTH_Logout           = "/Auth/LogoutMyClient STS/1.0";
+const char* g_AUTH_RequestGameToken = "/Auth/RequestGameToken STS/1.0";
 
 LoginSession::LoginSession(ClientConnection *Client) : m_Client(Client), m_ConnectionType(0), m_Program(0),
-    m_Build(0), m_Process(0), m_TLSSendBuffer(), m_TLSSendBufferLength(0), m_TLSSendNeeded(false), m_TSLReady(false)
+    m_Build(0), m_Process(0), m_SendPackets(), m_TSLReady(false)
 {
 
 }
@@ -44,6 +45,10 @@ bool LoginSession::Recieve(XMLPacket *Packet)
         ListGameAccounts(Packet);
     }
 
+    else if (strncmp(Packet->m_Path, g_AUTH_RequestGameToken, sizeof(Packet->m_Path)) == 0) {
+        RequestGameToken(Packet);
+    }
+
     else if (strncmp(Packet->m_Path, g_AUTH_Logout, sizeof(Packet->m_Path)) == 0) {
         Logout(Packet);
     }
@@ -57,11 +62,21 @@ bool LoginSession::Recieve(XMLPacket *Packet)
 
 void LoginSession::Send(SecureLogin *tlsClient)
 {
-    if (m_TLSSendNeeded) {
+    /*if (m_TLSSendNeeded) {
         tlsClient->Send(m_TLSSendBuffer, m_TLSSendBufferLength);
         m_TLSSendNeeded = false;
         memset(m_TLSSendBuffer, 0, 4096);
+    }*/
+
+    for (auto& message : m_SendPackets) {
+        if (message.m_TLSSendNeeded) {
+            tlsClient->Send(message.m_TLSSendBuffer, message.m_TLSSendBufferLength);
+            message.m_TLSSendNeeded = false;
+            memset(message.m_TLSSendBuffer, 0, 4096);
+        }
     }
+
+    m_SendPackets.clear();
 }
 
 void LoginSession::Init(XMLPacket *Packet)
@@ -108,10 +123,12 @@ void LoginSession::GetHostname(XMLPacket *Packet)
     replyPacket.AddElement("Hostname", "cligate-fra.101.ncplatform.net.");
 
     // Signal that there is TLS data to be sent next time round.
-    memset(m_TLSSendBuffer, 0, 4096);
-    sprintf(m_TLSSendBuffer, replyPacket.Payload());
-    m_TLSSendBufferLength = strlen(m_TLSSendBuffer);
-    m_TLSSendNeeded = true;
+    SessionSendPacket packet;
+    memset(packet.m_TLSSendBuffer, 0, 4096);
+    sprintf(packet.m_TLSSendBuffer, replyPacket.Payload());
+    packet.m_TLSSendBufferLength = strlen(packet.m_TLSSendBuffer);
+    packet.m_TLSSendNeeded = true;
+    m_SendPackets.push_back(packet);
 }
 
 void LoginSession::StartSsoLogin(XMLPacket *Packet)
@@ -158,7 +175,6 @@ void LoginSession::StartSsoLogin(XMLPacket *Packet)
     const char* temporary_resumeToken = "22236HTR-CCCC-CCCC-CCCC-2310CCCCC93A";
     const char* temporary_username = "nomelx.devel";
 
-    memset(m_TLSSendBuffer, 0, 4096);
     GW2Packet replyPacket("", sequence, PT_REPLY);
     replyPacket.AddElement("UserId", temporary_guid);
     replyPacket.AddElement("UserCenter", "5");
@@ -166,9 +182,14 @@ void LoginSession::StartSsoLogin(XMLPacket *Packet)
     replyPacket.AddElement("Parts", "");
     replyPacket.AddElement("ResumeToken", temporary_resumeToken);
     replyPacket.AddElement("EmailVerified", "1");
-    sprintf(m_TLSSendBuffer, replyPacket.Payload());
-    m_TLSSendBufferLength = strlen(m_TLSSendBuffer);
-    m_TLSSendNeeded = true;
+
+
+    SessionSendPacket packet;
+    memset(packet.m_TLSSendBuffer, 0, 4096);
+    sprintf(packet.m_TLSSendBuffer, replyPacket.Payload());
+    packet.m_TLSSendBufferLength = strlen(packet.m_TLSSendBuffer);
+    packet.m_TLSSendNeeded = true;
+    m_SendPackets.push_back(packet);
 }
 
 void LoginSession::ListGameAccounts(XMLPacket *Packet)
@@ -183,10 +204,9 @@ void LoginSession::ListGameAccounts(XMLPacket *Packet)
     printf("Looking up game accounts...\n");
     int sequence = Packet->m_Meta[2] - '0';
 
-    const char* temporary_guid = "0687C32C-0331-E611-80C3-ECB1D78A5C75";
+    const char* temporary_guid = "068XXXXC-XXXX-XXXX-XXXX-XXXXD7XXXX75";
     const char* temporary_username = "nomelx.devel";
 
-    memset(m_TLSSendBuffer, 0, 4096);
     GW2Packet messagePacket("/Presence/UserInfo", sequence, PT_MESSAGE);
     messagePacket.AddElement("Status", "online");
     messagePacket.AddElement("Aliases", "");
@@ -219,9 +239,42 @@ void LoginSession::ListGameAccounts(XMLPacket *Packet)
         compiledReply += line;
     }
 
-    sprintf(m_TLSSendBuffer, "%s%s", messagePacket.Payload(), compiledReply.c_str());
-    m_TLSSendBufferLength = strlen(m_TLSSendBuffer);
-    m_TLSSendNeeded = true;
+    SessionSendPacket message;
+    memset(message.m_TLSSendBuffer, 0, 4096);
+    sprintf(message.m_TLSSendBuffer, messagePacket.Payload());
+    message.m_TLSSendBufferLength = strlen(message.m_TLSSendBuffer);
+    message.m_TLSSendNeeded = true;
+    m_SendPackets.push_back(message);
+
+    SessionSendPacket gameArray;
+    memset(gameArray.m_TLSSendBuffer, 0, 4096);
+    sprintf(gameArray.m_TLSSendBuffer, compiledReply.c_str());
+    gameArray.m_TLSSendBufferLength = strlen(gameArray.m_TLSSendBuffer);
+    gameArray.m_TLSSendNeeded = true;
+    m_SendPackets.push_back(gameArray);
+}
+
+void LoginSession::RequestGameToken(XMLPacket *Packet)
+{
+    rapidxml::xml_node<>* requestNode = Packet->m_XMLDocument.first_node("Request");
+    auto gameCode = requestNode->first_node("GameCode")->value();
+    auto accountAlias = requestNode->first_node("AccountAlias")->value();
+
+    printf("Generating Session Token.\n");
+    int sequence = Packet->m_Meta[2] - '0';
+
+    // Form a packet, the only element is the detination host name
+    // GW2 will then try to connect to the specified server.
+    GW2Packet replyPacket("", sequence, PT_REPLY);
+    replyPacket.AddElement("Token", "0XXXX32C-XXXX-XXXX-XXXX-XXXXD78XXXX5");
+
+    // Signal that there is TLS data to be sent next time round.
+    SessionSendPacket packet;
+    memset(packet.m_TLSSendBuffer, 0, 4096);
+    sprintf(packet.m_TLSSendBuffer, replyPacket.Payload());
+    packet.m_TLSSendBufferLength = strlen(packet.m_TLSSendBuffer);
+    packet.m_TLSSendNeeded = true;
+    m_SendPackets.push_back(packet);
 }
 
 void LoginSession::Logout(XMLPacket *Packet)

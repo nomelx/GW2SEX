@@ -15,6 +15,12 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 
+struct SessionSendPacket {
+    char m_TLSSendBuffer[4096];
+    int m_TLSSendBufferLength;
+    bool m_TLSSendNeeded;
+};
+
 class LoginSession
 {
 public:
@@ -28,6 +34,7 @@ private:
     void GetHostname(XMLPacket* Packet);
     void StartSsoLogin(XMLPacket* Packet);
     void ListGameAccounts(XMLPacket* Packet);
+    void RequestGameToken(XMLPacket* Packet);
     void Logout(XMLPacket *Packet);
 private:
     ClientConnection* m_Client;
@@ -36,9 +43,12 @@ private:
     int m_Program;
     int m_Build;
     int m_Process;
-    char m_TLSSendBuffer[4096];
+
+private:
+    /*char m_TLSSendBuffer[4096];
     int m_TLSSendBufferLength;
-    bool m_TLSSendNeeded;
+    bool m_TLSSendNeeded;*/
+    std::vector<SessionSendPacket> m_SendPackets;
 public:
     bool m_TSLReady;
 };
